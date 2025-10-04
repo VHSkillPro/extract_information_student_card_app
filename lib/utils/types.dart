@@ -1,0 +1,1 @@
+enum CardType { student, library }
