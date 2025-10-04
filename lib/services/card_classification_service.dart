@@ -76,12 +76,17 @@ class CardClassificationService {
     final outputs = _session!.run(OrtRunOptions(), {'input': ortInput});
     final output = outputs.first!.value as List<List<double>>;
 
-    // Postprocess the output
-    if (output[0][0] >= output[0][1]) {
-      return CardType.student;
-    } else {
-      return CardType.library;
+    // Postprocess the output to determine card type
+    CardType result =
+        output[0][0] >= output[0][1] ? CardType.student : CardType.library;
+
+    // Clean up
+    ortInput.release();
+    for (var element in outputs) {
+      element!.release();
     }
+
+    return result;
   }
 
   /// Preprocesses the input image bytes for model inference.
