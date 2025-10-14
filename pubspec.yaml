@@ -7,11 +7,13 @@ environment:
   sdk: ^3.7.2
 
 dependencies:
+  ffi: ^2.1.4
   flutter:
     sdk: flutter
   image: ^4.5.4
   logger: ^2.6.1
   onnxruntime: ^1.4.1
+  path_provider: ^2.1.5
 
 dev_dependencies:
   flutter_test:
