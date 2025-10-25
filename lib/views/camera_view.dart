@@ -1,31 +1,11 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:extract_information_student_card_app/views/edit_crop_view.dart';
 import 'package:extract_information_student_card_app/services/snackbar_service.dart';
 import 'package:extract_information_student_card_app/viewmodels/camera_viewmodel.dart';
 
-class CameraView extends StatefulWidget {
+class CameraView extends StatelessWidget {
   const CameraView({super.key});
-
-  @override
-  State<CameraView> createState() => _CameraViewState();
-}
-
-class _CameraViewState extends State<CameraView> {
-  late CameraViewModel _viewModel;
-
-  @override
-  void initState() {
-    super.initState();
-    _viewModel = Provider.of<CameraViewModel>(context, listen: false);
-    _viewModel.initializeCamera();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,11 +14,11 @@ class _CameraViewState extends State<CameraView> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (viewModel.errorMessage != null) {
             SnackbarService.showError(context, viewModel.errorMessage!);
-            viewModel.clearError();
+            viewModel.clearErrorMessage();
           }
         });
 
-        if (!viewModel.isInitialized || viewModel.controller == null) {
+        if (!viewModel.isInitialized) {
           return const Scaffold(
             backgroundColor: Colors.black,
             body: Center(child: CircularProgressIndicator()),
@@ -65,7 +45,7 @@ class _CameraViewState extends State<CameraView> {
                   ),
                 ),
               ),
-              _buildGuidanceOverlay(),
+              _buildGuidanceOverlay(context),
               _buildControlBar(context, viewModel),
             ],
           ),
@@ -74,7 +54,8 @@ class _CameraViewState extends State<CameraView> {
     );
   }
 
-  Widget _buildGuidanceOverlay() {
+  /// Builds a semi-transparent overlay to guide the user in positioning their card.
+  Widget _buildGuidanceOverlay(BuildContext context) {
     final size = MediaQuery.of(context).size;
     const cardAspectRatio = 1.25;
     final frameWidth = size.width * 0.9;
@@ -109,6 +90,7 @@ class _CameraViewState extends State<CameraView> {
     );
   }
 
+  /// Builds the control bar widget for the camera view.
   Widget _buildControlBar(BuildContext context, CameraViewModel viewModel) {
     return Align(
       alignment: Alignment.bottomCenter,
@@ -130,21 +112,7 @@ class _CameraViewState extends State<CameraView> {
             ),
             GestureDetector(
               onTap: () async {
-                final imageFile = await viewModel.takePicture();
-                if (imageFile == null || !mounted) {
-                  SnackbarService.showError(
-                    context,
-                    "Chụp ảnh thất bại. Vui lòng thử lại.",
-                  );
-                  return;
-                }
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => EditCropView(imagePath: imageFile.path),
-                  ),
-                );
+                await viewModel.takePicture(context);
               },
               child: Opacity(
                 opacity: viewModel.isBusy ? 0.5 : 1.0,
@@ -170,7 +138,10 @@ class _CameraViewState extends State<CameraView> {
               ),
             ),
             IconButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                Navigator.of(context).pop();
+                viewModel.cleanUpCamera();
+              },
               icon: const Icon(Icons.close, color: Colors.white, size: 30),
             ),
           ],

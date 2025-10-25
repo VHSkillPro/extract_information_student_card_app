@@ -5,6 +5,7 @@ import 'package:extract_information_student_card_app/views/home_view.dart';
 import 'package:extract_information_student_card_app/viewmodels/home_viewmodel.dart';
 import 'package:extract_information_student_card_app/viewmodels/camera_viewmodel.dart';
 import 'package:extract_information_student_card_app/viewmodels/edit_crop_viewmodel.dart';
+import 'package:extract_information_student_card_app/viewmodels/verification_information_viewmodel.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,6 +50,9 @@ class MainApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => HomeViewModel()),
         ChangeNotifierProvider(create: (_) => CameraViewModel()),
         ChangeNotifierProvider(create: (_) => EditCropViewModel()),
+        ChangeNotifierProvider(
+          create: (_) => VerificationInformationViewModel(),
+        ),
       ],
       child: MaterialApp(
         title: 'Ứng dụng trích xuất thông tin thẻ sinh viên',
@@ -62,46 +66,3 @@ class MainApp extends StatelessWidget {
     );
   }
 }
-
-// class MyWidget extends StatefulWidget {
-//   const MyWidget({super.key});
-
-//   @override
-//   State<MyWidget> createState() => _MyWidgetState();
-// }
-
-// class _MyWidgetState extends State<MyWidget> {
-//   Future<CardType> classify(String imagePath) async {
-//     var service = CardClassificationService();
-//     await service.initialize();
-//     return await service.classify(
-//       await ImageUtils.loadImageFromAssets(imagePath),
-//     );
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     String imagePath = "assets/images/24T1020413_TheThuVien.jpg";
-
-//     return Column(
-//       children: [
-//         SizedBox(height: 50),
-//         Image.asset(imagePath),
-//         FutureBuilder<CardType>(
-//           future: classify(imagePath),
-//           builder: (context, snapshot) {
-//             if (snapshot.connectionState == ConnectionState.waiting) {
-//               return const CircularProgressIndicator();
-//             } else if (snapshot.hasError) {
-//               return Text('Error: ${snapshot.error}');
-//             } else if (snapshot.hasData) {
-//               return Text('Card Type: ${snapshot.data}');
-//             } else {
-//               return const Text('No data');
-//             }
-//           },
-//         ),
-//       ],
-//     );
-//   }
-// }

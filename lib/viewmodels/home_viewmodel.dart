@@ -1,7 +1,9 @@
+import 'package:extract_information_student_card_app/viewmodels/camera_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:extract_information_student_card_app/views/camera_view.dart';
 import 'package:extract_information_student_card_app/views/edit_crop_view.dart';
+import 'package:provider/provider.dart';
 
 class HomeViewModel extends ChangeNotifier {
   bool _isBusy = false;
@@ -23,6 +25,7 @@ class HomeViewModel extends ChangeNotifier {
       return;
     }
 
+    Provider.of<CameraViewModel>(context, listen: false).initializeCamera();
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const CameraView()),

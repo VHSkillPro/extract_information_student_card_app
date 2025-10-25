@@ -1,3 +1,4 @@
+import 'package:extract_information_student_card_app/viewmodels/camera_viewmodel.dart';
 import 'package:extract_information_student_card_app/viewmodels/edit_crop_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -29,6 +30,7 @@ class _EditCropViewState extends State<EditCropView> {
     if (croppedImagePath != null) {
       viewModel.proceedToVerification(context, croppedImagePath);
     } else {
+      Provider.of<CameraViewModel>(context, listen: false).initializeCamera();
       Navigator.of(context).pop();
     }
   }

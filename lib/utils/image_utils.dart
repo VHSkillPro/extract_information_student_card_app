@@ -17,6 +17,20 @@ class ImageUtils {
     return byteData.buffer.asUint8List();
   }
 
+  static Future<Uint8List> loadImageFromLocalPath(String path) async {
+    try {
+      File imageFile = File(path);
+      if (await imageFile.exists()) {
+        Uint8List imageBytes = await imageFile.readAsBytes();
+        return imageBytes;
+      } else {
+        throw Exception("File không tồn tại tại đường dẫn: $path");
+      }
+    } catch (e) {
+      throw Exception("Lỗi khi đọc file ảnh: $e");
+    }
+  }
+
   /// Writes the provided [imageBytes] to a temporary file with the given [filename].
   ///
   /// The file is created in the system's temporary directory.
