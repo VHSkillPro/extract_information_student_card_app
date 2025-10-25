@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:extract_information_student_card_app/services/snackbar_service.dart';
-import 'package:extract_information_student_card_app/views/edit_crop_view.dart';
 import 'package:extract_information_student_card_app/viewmodels/home_viewmodel.dart';
 
 class HomeView extends StatelessWidget {
@@ -14,10 +13,11 @@ class HomeView extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Consumer<HomeViewModel>(
         builder: (context, viewModel, child) {
+          // Show error snackbar when view build completes
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (viewModel.errorMessage != null) {
               SnackbarService.showError(context, viewModel.errorMessage!);
-              viewModel.clearError();
+              viewModel.clearErrorMessage();
             }
           });
 
@@ -47,19 +47,26 @@ class HomeView extends StatelessWidget {
                   ),
                   const SizedBox(height: 72),
                   ElevatedButton.icon(
-                    onPressed:
-                        viewModel.isBusy
-                            ? null
-                            : () => viewModel.startScan(context),
+                    onPressed: () => viewModel.startScan(context),
                     icon: const Icon(Icons.camera_alt, color: Colors.white),
-                    label: const Text(
-                      'BẮT ĐẦU QUÉT',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    label:
+                        viewModel.isBusy
+                            ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : const Text(
+                              'BẮT ĐẦU QUÉT',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1976D2),
                       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -70,26 +77,7 @@ class HomeView extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   TextButton(
-                    onPressed:
-                        viewModel.isBusy
-                            ? null
-                            : () async {
-                              final imageFile = await viewModel.pickFromGallery(
-                                context,
-                              );
-
-                              if (imageFile == null || !context.mounted) return;
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => EditCropView(
-                                        imagePath: imageFile.path,
-                                      ),
-                                ),
-                              );
-                            },
+                    onPressed: () => viewModel.pickFromGallery(context),
                     child:
                         viewModel.isBusy
                             ? const SizedBox(
