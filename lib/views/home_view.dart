@@ -1,7 +1,8 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 import 'package:extract_information_student_card_app/services/snackbar_service.dart';
 import 'package:extract_information_student_card_app/views/edit_crop_view.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:extract_information_student_card_app/viewmodels/home_viewmodel.dart';
 
 class HomeView extends StatelessWidget {
@@ -27,6 +28,8 @@ class HomeView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  SvgPicture.asset('assets/images/logo_husc.svg', width: 150),
+                  const SizedBox(height: 64),
                   const Text(
                     'Ứng dụng trích xuất thông tin thẻ sinh viên',
                     textAlign: TextAlign.center,
