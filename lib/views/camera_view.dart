@@ -30,24 +30,34 @@ class CameraView extends StatelessWidget {
         var scale = size.aspectRatio * cameraAspectRatio;
         if (scale < 1) scale = 1 / scale;
 
-        return Scaffold(
-          backgroundColor: Colors.black,
-          body: Stack(
-            fit: StackFit.expand,
-            children: [
-              ClipRect(
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: SizedBox(
-                    width: viewModel.controller!.value.previewSize!.height,
-                    height: viewModel.controller!.value.previewSize!.width,
-                    child: CameraPreview(viewModel.controller!),
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (bool didPop, result) {
+            if (didPop) {
+              return;
+            }
+            Navigator.of(context).pop();
+            viewModel.cleanUpCamera();
+          },
+          child: Scaffold(
+            backgroundColor: Colors.black,
+            body: Stack(
+              fit: StackFit.expand,
+              children: [
+                ClipRect(
+                  child: FittedBox(
+                    fit: BoxFit.contain,
+                    child: SizedBox(
+                      width: viewModel.controller!.value.previewSize!.height,
+                      height: viewModel.controller!.value.previewSize!.width,
+                      child: CameraPreview(viewModel.controller!),
+                    ),
                   ),
                 ),
-              ),
-              _buildGuidanceOverlay(context),
-              _buildControlBar(context, viewModel),
-            ],
+                _buildGuidanceOverlay(context),
+                _buildControlBar(context, viewModel),
+              ],
+            ),
           ),
         );
       },

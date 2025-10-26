@@ -4,9 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 class EditCropView extends StatefulWidget {
+  final bool isFromGallery;
   final String imagePath;
 
-  const EditCropView({super.key, required this.imagePath});
+  const EditCropView({
+    super.key,
+    required this.imagePath,
+    required this.isFromGallery,
+  });
 
   @override
   State<EditCropView> createState() => _EditCropViewState();
@@ -30,26 +35,45 @@ class _EditCropViewState extends State<EditCropView> {
     if (croppedImagePath != null) {
       viewModel.proceedToVerification(context, croppedImagePath);
     } else {
-      Provider.of<CameraViewModel>(context, listen: false).initializeCamera();
+      if (!widget.isFromGallery) {
+        Provider.of<CameraViewModel>(context, listen: false).initializeCamera();
+      }
       Navigator.of(context).pop();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Colors.black,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: Colors.white),
-            SizedBox(height: 20),
-            Text(
-              'Đang chuẩn bị trình cắt ảnh...',
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ),
-          ],
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, result) {
+        if (didPop) {
+          return;
+        }
+        Navigator.of(context).pop();
+        if (!widget.isFromGallery) {
+          Provider.of<CameraViewModel>(
+            context,
+            listen: false,
+          ).initializeCamera();
+        } else {
+          Provider.of<CameraViewModel>(context, listen: false).cleanUpCamera();
+        }
+      },
+      child: const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: Colors.white),
+              SizedBox(height: 20),
+              Text(
+                'Đang chuẩn bị trình cắt ảnh...',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ],
+          ),
         ),
       ),
     );

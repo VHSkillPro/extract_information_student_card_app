@@ -51,7 +51,11 @@ class HomeViewModel extends ChangeNotifier {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => EditCropView(imagePath: pickedFile.path),
+            builder:
+                (context) => EditCropView(
+                  imagePath: pickedFile.path,
+                  isFromGallery: true,
+                ),
           ),
         );
       }

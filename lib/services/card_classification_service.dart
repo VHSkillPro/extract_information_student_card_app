@@ -1,7 +1,7 @@
 import 'dart:typed_data';
-import 'package:logger/logger.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
+import 'package:logger/logger.dart';
 import 'package:onnxruntime/onnxruntime.dart';
 import 'package:extract_information_student_card_app/utils/types.dart';
 
@@ -18,10 +18,9 @@ class CardClassificationService {
 
   // ONNX Runtime variables
   static const int inputSize = 224;
-  final Logger logger = Logger();
 
-  OrtSession? _session;
   bool _initialized = false;
+  OrtSession? _session;
 
   /// Initializes the card classification service by loading the ONNX model.
   ///
@@ -35,16 +34,12 @@ class CardClassificationService {
     if (_initialized) {
       return;
     }
-
-    logger.d("[CardClassificationService] 🔧 Loading ONNX model...");
-
     final sessionOptions = OrtSessionOptions();
     final rawModel = await rootBundle.load('assets/weights/classify.onnx');
     final bytes = rawModel.buffer.asUint8List();
     _session = OrtSession.fromBuffer(bytes, sessionOptions);
     _initialized = true;
-
-    logger.d('[CardClassificationService] ✅ Model loaded successfully!');
+    Logger().d('[CardClassificationService] Initialized successfully.');
   }
 
   /// Classifies the given image bytes as a card type.

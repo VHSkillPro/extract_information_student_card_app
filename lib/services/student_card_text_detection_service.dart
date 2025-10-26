@@ -1,10 +1,10 @@
 import 'dart:ffi';
 import 'dart:typed_data';
+import 'package:ffi/ffi.dart';
+import 'package:logger/logger.dart';
 import 'package:extract_information_student_card_app/core/ffi/det_ffi.dart';
 import 'package:extract_information_student_card_app/utils/file_utils.dart';
 import 'package:extract_information_student_card_app/utils/image_utils.dart';
-import 'package:logger/logger.dart';
-import 'package:ffi/ffi.dart';
 
 class StudentCardTextDetectionService {
   // Singleton pattern
@@ -26,20 +26,16 @@ class StudentCardTextDetectionService {
   static const int batchSize = 1;
   static const String configPath = "assets/weights/config.txt";
 
+  bool _initialized = false;
   late Pointer<Utf8> _detModelPathPtr;
   late Pointer<Utf8> _runtimeDevicePtr;
   late Pointer<Utf8> _precisionPtr;
   late Pointer<Utf8> _configPathPtr;
 
-  final Logger logger = Logger();
-  bool _initialized = false;
-
   Future<void> initialize() async {
     if (_initialized) {
       return;
     }
-
-    logger.d("[StudentCardTextDetectionService] 🔧 Loading model...");
 
     _detModelPathPtr =
         (await FileUtils.copyAssetToFile(
@@ -55,7 +51,7 @@ class StudentCardTextDetectionService {
         )).toNativeUtf8();
     _initialized = true;
 
-    logger.d('[StudentCardTextDetectionService] ✅ Model loaded successfully!');
+    Logger().d("[LibraryCardTextDetectionService] Initialized successfully.");
   }
 
   /// Detects text from the given image bytes using a native detection model.

@@ -107,7 +107,11 @@ class CameraViewModel extends ChangeNotifier {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => EditCropView(imagePath: imageFile.path),
+            builder:
+                (_) => EditCropView(
+                  imagePath: imageFile.path,
+                  isFromGallery: false,
+                ),
           ),
         );
         cleanUpCamera();

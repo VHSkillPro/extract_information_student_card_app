@@ -20,17 +20,13 @@ class TextRecognitionService {
   // Service
   static const String _modelDir = "assets/weights/recognition";
 
-  late Pointer<Utf8> _modelDirPtr;
-
-  final Logger logger = Logger();
   bool _initialized = false;
+  late Pointer<Utf8> _modelDirPtr;
 
   Future<void> initialize() async {
     if (_initialized) {
       return;
     }
-
-    logger.d("[TextRecognitionService] 🔧 Loading model...");
 
     await FileUtils.copyAssetToFile("$_modelDir/cnn.onnx", "cnn.onnx");
     await FileUtils.copyAssetToFile("$_modelDir/decoder.onnx", "decoder.onnx");
@@ -42,14 +38,12 @@ class TextRecognitionService {
     _modelDirPtr = path.substring(0, path.lastIndexOf('/')).toNativeUtf8();
     _initialized = true;
 
-    logger.d('[TextRecognitionService] ✅ Model loaded successfully!');
+    Logger().d('[TextRecognitionService] Initialized successfully.');
   }
 
   Future<String> recognize(Uint8List imageBytes) async {
     if (!_initialized) {
-      throw Exception(
-        "[TextRecognitionService] Service not initialized. Call initialize() first.",
-      );
+      throw Exception("[TextRecognitionService] Service not initialized.");
     }
 
     final imageFilename = "temp_image_rec.png";
@@ -65,11 +59,5 @@ class TextRecognitionService {
 
     malloc.free(imagePathPtr);
     return recognizedText;
-  }
-
-  void dispose() {
-    malloc.free(_modelDirPtr);
-    _initialized = false;
-    logger.d('[TextRecognitionService] 🗑️ Resources disposed.');
   }
 }
