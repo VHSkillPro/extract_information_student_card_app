@@ -17,11 +17,13 @@ class VerificationInformationViewModel extends ChangeNotifier {
   StudentCardTextDetectionService? _studentCardTextDetectionService;
   TextRecognitionService? _textRecognitionService;
 
+  List<Bbox> _detectedBboxs = [];
   bool _isInitialized = false;
   bool _isProcessing = false;
   String? _errorMessage;
   StudentInformation? _studentInformation;
 
+  List<Bbox> get detectedBboxs => _detectedBboxs;
   bool get isInitialized => _isInitialized;
   bool get isProcessing => _isProcessing;
   String? get errorMessage => _errorMessage;
@@ -54,6 +56,7 @@ class VerificationInformationViewModel extends ChangeNotifier {
       await initializeModel();
     }
 
+    _detectedBboxs = [];
     _isProcessing = true;
     _errorMessage = null;
     notifyListeners();
@@ -66,50 +69,66 @@ class VerificationInformationViewModel extends ChangeNotifier {
       year: "2021 - 2025",
     );
 
-    // Uint8List image;
-    // try {
-    //   image = await ImageUtils.loadImageFromLocalPath(imagePath);
-    // } catch (e) {
-    //   _errorMessage = 'Lỗi khi tải ảnh: $e';
-    //   _isProcessing = false;
-    //   notifyListeners();
-    //   return;
-    // }
+    // Classify card
+    Uint8List image;
+    try {
+      image = await ImageUtils.loadImageFromLocalPath(imagePath);
+    } catch (e) {
+      _errorMessage = 'Lỗi khi tải ảnh: $e';
+      _isProcessing = false;
+      notifyListeners();
+      return;
+    }
+    final cardType = await _cardClassificationService!.classify(image);
 
-    // final cardType = await _cardClassificationService!.classify(image);
+    // Extract text regions
+    if (cardType == CardType.library) {
+      _detectedBboxs = await _libraryCardTextDetectionService!.detect(image);
 
-    // List<Bbox> bboxs = [];
-    // if (cardType == CardType.library) {
-    //   DetResultList detResultList = await _libraryCardTextDetectionService!
-    //       .detect(image);
+      List<Uint8List> croppedImages = [];
+      for (final bbox in _detectedBboxs) {
+        try {
+          final croppedImage = await ImageUtils.cropImageFromBbox(image, bbox);
+          croppedImages.add(croppedImage);
+        } catch (e) {
+          _errorMessage = 'Lỗi khi cắt ảnh: $e';
+          _isProcessing = false;
+          notifyListeners();
+          return;
+        }
+      }
 
-    //   for (int i = 0; i < detResultList.count; ++i) {
-    //     DetResult detResult = detResultList.data[i];
-    //     Bbox bbox = Bbox(
-    //       xMin: detResult.box[0],
-    //       yMin: detResult.box[1],
-    //       xMax: detResult.box[4],
-    //       yMax: detResult.box[5],
-    //     );
+      final labels = await _textRecognitionService!.recognizeBatch(
+        croppedImages,
+      );
+      for (int i = 0; i < _detectedBboxs.length; i++) {
+        _detectedBboxs[i].label = labels[i];
+        print(_detectedBboxs[i].toString());
+      }
+    } else {
+      _detectedBboxs = await _studentCardTextDetectionService!.detect(image);
 
-    //     try {
-    //       final croppedImage = await ImageUtils.cropImageFromBbox(image, bbox);
-    //       final label = await _textRecognitionService!.recognize(croppedImage);
-    //       bbox.label = label;
-    //       bboxs.add(bbox);
-    //     } catch (e) {
-    //       _errorMessage = 'Lỗi khi cắt ảnh: $e';
-    //       _isProcessing = false;
-    //       notifyListeners();
-    //       return;
-    //     }
-    //   }
-    //   _libraryCardTextDetectionService!.freeResult(detResultList);
-    // } else {
-    //   // final detectedRegions = await _studentCardTextDetectionService!.detect(
-    //   //   image,
-    //   // );
-    // }
+      List<Uint8List> croppedImages = [];
+      for (final bbox in _detectedBboxs) {
+        try {
+          final croppedImage = await ImageUtils.cropImageFromBbox(image, bbox);
+          croppedImages.add(croppedImage);
+        } catch (e) {
+          _errorMessage = 'Lỗi khi cắt ảnh: $e';
+          _isProcessing = false;
+          notifyListeners();
+          return;
+        }
+      }
+
+      final labels = await _textRecognitionService!.recognizeBatch(
+        croppedImages,
+      );
+      for (int i = 0; i < _detectedBboxs.length; i++) {
+        _detectedBboxs[i].label = labels[i];
+        print(_detectedBboxs[i].toString());
+      }
+    }
 
     _isProcessing = false;
     notifyListeners();

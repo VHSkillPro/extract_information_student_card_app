@@ -1,5 +1,7 @@
 import 'dart:ffi';
+import 'dart:math';
 import 'dart:typed_data';
+import 'package:extract_information_student_card_app/models/bbox.dart';
 import 'package:ffi/ffi.dart';
 import 'package:logger/logger.dart';
 import 'package:extract_information_student_card_app/core/ffi/det_ffi.dart';
@@ -19,12 +21,12 @@ class LibraryCardTextDetectionService {
 
   // Configuration constants
   static const String _detModelPath =
-      "assets/weights/ch_PP-OCRv3_det_slim_opt.nb";
+      "assets/weights/detection/db_mv3_library.nb";
   static const String runtimeDevice = "arm8";
   static const String precision = "INT8";
   static const int numThreads = 10;
   static const int batchSize = 1;
-  static const String configPath = "assets/weights/config.txt";
+  static const String configPath = "assets/weights/detection/config.txt";
 
   bool _initialized = false;
   late Pointer<Utf8> _detModelPathPtr;
@@ -40,7 +42,7 @@ class LibraryCardTextDetectionService {
     _detModelPathPtr =
         (await FileUtils.copyAssetToFile(
           _detModelPath,
-          "ch_PP-OCRv3_det_slim_opt.nb",
+          "db_mv3_library.nb",
         )).toNativeUtf8();
     _runtimeDevicePtr = runtimeDevice.toNativeUtf8();
     _precisionPtr = precision.toNativeUtf8();
@@ -55,19 +57,7 @@ class LibraryCardTextDetectionService {
   }
 
   /// Detects text from the given image bytes using a native detection model.
-  ///
-  /// Throws an [Exception] if the service has not been initialized.
-  ///
-  /// Writes the provided [imageBytes] to a temporary file, then runs the native
-  /// detection function with the configured model, device, precision, thread count,
-  /// batch size, and configuration path.
-  ///
-  /// Frees any allocated native memory after detection.
-  ///
-  /// Returns a [DetResultList] containing the detection results.
-  ///
-  /// [imageBytes]: The image data as a [Uint8List] to be processed.
-  Future<DetResultList> detect(Uint8List imageBytes) async {
+  Future<List<Bbox>> detect(Uint8List imageBytes) async {
     if (!_initialized) {
       throw Exception('LibraryCardTextDetectionService not initialized!');
     }
@@ -88,33 +78,33 @@ class LibraryCardTextDetectionService {
       imagePathPtr,
       _configPathPtr,
     );
-
     malloc.free(imagePathPtr);
-    return result;
-  }
 
-  /// Frees the memory allocated for the given [DetResultList].
-  ///
-  /// This method should be called after processing the detection results
-  /// to prevent memory leaks by releasing any resources associated with [resultList].
-  ///
-  /// [resultList] - The detection result list to be freed.
-  void freeResult(DetResultList resultList) {
-    freeDetResult(resultList);
-  }
-
-  /// Releases allocated resources and frees memory pointers if the service has been initialized.
-  ///
-  /// This method should be called when the service is no longer needed to prevent memory leaks.
-  /// It frees the memory allocated for model path, runtime device, precision, and config path pointers,
-  /// and marks the service as uninitialized.
-  void dispose() {
-    if (_initialized) {
-      malloc.free(_detModelPathPtr);
-      malloc.free(_runtimeDevicePtr);
-      malloc.free(_precisionPtr);
-      malloc.free(_configPathPtr);
-      _initialized = false;
+    List<Bbox> bboxList = [];
+    for (int i = 0; i < result.count; ++i) {
+      DetResult detResult = result.data[i];
+      Bbox bbox = Bbox(
+        xMin: min(
+          min(detResult.box[0], detResult.box[2]),
+          min(detResult.box[4], detResult.box[6]),
+        ),
+        yMin: min(
+          min(detResult.box[1], detResult.box[3]),
+          min(detResult.box[5], detResult.box[7]),
+        ),
+        xMax: max(
+          max(detResult.box[0], detResult.box[2]),
+          max(detResult.box[4], detResult.box[6]),
+        ),
+        yMax: max(
+          max(detResult.box[1], detResult.box[3]),
+          max(detResult.box[5], detResult.box[7]),
+        ),
+      );
+      bboxList.add(bbox);
     }
+
+    freeDetResult(result);
+    return bboxList;
   }
 }

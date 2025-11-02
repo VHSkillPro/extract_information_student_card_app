@@ -32,3 +32,4 @@ flutter:
     - assets/weights/
     - assets/images/
     - assets/weights/recognition/
+    - assets/weights/detection/

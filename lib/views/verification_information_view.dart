@@ -1,11 +1,10 @@
 import 'dart:typed_data';
-
-import 'package:extract_information_student_card_app/services/snackbar_service.dart';
-import 'package:extract_information_student_card_app/utils/image_utils.dart';
-import 'package:extract_information_student_card_app/viewmodels/camera_viewmodel.dart';
-import 'package:extract_information_student_card_app/viewmodels/verification_information_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image/image.dart' as img;
+import 'package:extract_information_student_card_app/services/snackbar_service.dart';
+import 'package:extract_information_student_card_app/utils/image_utils.dart';
+import 'package:extract_information_student_card_app/viewmodels/verification_information_viewmodel.dart';
 
 class VerificationInformationView extends StatefulWidget {
   final String imagePath;
@@ -131,9 +130,82 @@ class _VerificationInformationViewState
                                     if (snapshot.connectionState ==
                                         ConnectionState.done) {
                                       if (snapshot.hasData) {
-                                        return Image.memory(
-                                          snapshot.data as Uint8List,
-                                          fit: BoxFit.contain,
+                                        final Uint8List imageData =
+                                            snapshot.data as Uint8List;
+                                        final image = img.decodeImage(
+                                          imageData,
+                                        );
+
+                                        return LayoutBuilder(
+                                          builder: (context, constraints) {
+                                            final double imageAspectRatio =
+                                                image!.width / image.height;
+                                            final double containerAspectRatio =
+                                                constraints.maxWidth /
+                                                constraints.maxHeight;
+
+                                            double displayedWidth;
+                                            double displayedHeight;
+
+                                            if (imageAspectRatio >
+                                                containerAspectRatio) {
+                                              displayedWidth =
+                                                  constraints.maxWidth;
+                                              displayedHeight =
+                                                  constraints.maxWidth /
+                                                  imageAspectRatio;
+                                            } else {
+                                              displayedHeight =
+                                                  constraints.maxHeight;
+                                              displayedWidth =
+                                                  constraints.maxHeight *
+                                                  imageAspectRatio;
+                                            }
+
+                                            final double scaleX =
+                                                displayedWidth / image.width;
+                                            final double scaleY =
+                                                displayedHeight / image.height;
+
+                                            return Stack(
+                                              alignment: Alignment.center,
+                                              children: [
+                                                Image.memory(
+                                                  snapshot.data as Uint8List,
+                                                  width: displayedWidth,
+                                                  height: displayedHeight,
+                                                  fit: BoxFit.contain,
+                                                ),
+                                                ...viewModel.detectedBboxs.map((
+                                                  bbox,
+                                                ) {
+                                                  return Positioned(
+                                                    left: bbox.xMin * scaleX,
+                                                    top: bbox.yMin * scaleY,
+                                                    width:
+                                                        (bbox.xMax -
+                                                            bbox.xMin) *
+                                                        scaleX,
+                                                    height:
+                                                        (bbox.yMax -
+                                                            bbox.yMin) *
+                                                        scaleY,
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        border: Border.all(
+                                                          color:
+                                                              Colors
+                                                                  .red, // Màu của bbox
+                                                          width:
+                                                              2.0, // Độ dày của bbox
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                }),
+                                              ],
+                                            );
+                                          },
                                         );
                                       } else {
                                         return const Center(
@@ -180,32 +252,6 @@ class _VerificationInformationViewState
                               icon: Icons.date_range_outlined,
                             ),
                             const SizedBox(height: 16),
-                            // Expanded(
-                            //   child: ElevatedButton.icon(
-                            //     icon: const Icon(Icons.check_circle_outline),
-                            //     label: const Text('Xác nhận'),
-                            //     onPressed: () {
-                            //       // Gom dữ liệu đã chỉnh sửa vào một Map mới
-                            //       // final updatedData = {
-                            //       //   'ho_ten': _hoTenController.text.trim(),
-                            //       //   'mssv': _mssvController.text.trim(),
-                            //       //   'ngay_sinh': _ngaySinhController.text.trim(),
-                            //       //   'lop': _lopController.text.trim(),
-                            //       //   'khoa_hoc': _khoaHocController.text.trim(),
-                            //       // };
-                            //       // Trả về Map dữ liệu này
-                            //       // Navigator.of(context).pop(updatedData);
-                            //     },
-                            //     style: ElevatedButton.styleFrom(
-                            //       padding: const EdgeInsets.symmetric(
-                            //         vertical: 14,
-                            //       ),
-                            //       shape: RoundedRectangleBorder(
-                            //         borderRadius: BorderRadius.circular(12),
-                            //       ),
-                            //     ),
-                            //   ),
-                            // ),
                           ],
                         ),
                       ),

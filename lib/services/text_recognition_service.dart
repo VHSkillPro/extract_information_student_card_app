@@ -60,4 +60,41 @@ class TextRecognitionService {
     malloc.free(imagePathPtr);
     return recognizedText;
   }
+
+  Future<List<String>> recognizeBatch(List<Uint8List> imagesBytesList) async {
+    if (!_initialized) {
+      throw Exception("[TextRecognitionService] Service not initialized.");
+    }
+
+    final imagePathPtrs = <Pointer<Utf8>>[];
+    for (var i = 0; i < imagesBytesList.length; i++) {
+      final imageFilename = "temp_image_rec_$i.png";
+      final imageFile = await ImageUtils.writeImageBytesToTempFile(
+        imageFilename,
+        imagesBytesList[i],
+      );
+      imagePathPtrs.add(imageFile.path.toNativeUtf8());
+    }
+
+    final pointerArray = malloc.allocate<Pointer<Utf8>>(
+      sizeOf<Pointer<Utf8>>() * imagePathPtrs.length,
+    );
+    for (var i = 0; i < imagePathPtrs.length; i++) {
+      pointerArray[i] = imagePathPtrs[i];
+    }
+
+    final result = nativeRunRegBatch(
+      _modelDirPtr,
+      pointerArray,
+      imagePathPtrs.length,
+    );
+
+    List<String> dartResults = [];
+    for (int i = 0; i < imagePathPtrs.length; i++) {
+      dartResults.add(result[i].toDartString());
+    }
+    nativeFreeUtf8StringArray(result, imagePathPtrs.length);
+
+    return dartResults;
+  }
 }
