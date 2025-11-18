@@ -98,9 +98,16 @@ class VerificationInformationViewModel extends ChangeNotifier {
       print(_detectedBboxs[i].toString());
     }
 
-    _studentInformation = await _classifyInformationForLibraryCard(
-      _detectedBboxs,
-    );
+    if (cardType == CardType.library) {
+      _studentInformation = await _classifyInformationForLibraryCard(
+        _detectedBboxs,
+      );
+    } else {
+      _studentInformation = await _classifyInformationForStudentCard(
+        _detectedBboxs,
+      );
+    }
+
     _isProcessing = false;
     notifyListeners();
   }
@@ -196,6 +203,126 @@ class VerificationInformationViewModel extends ChangeNotifier {
     );
 
     return studentInfo;
+  }
+
+  Future<StudentInformation> _classifyInformationForStudentCard(
+    List<Bbox> labels,
+  ) async {
+    final Map<String, String> extractedData = {};
+    List<Bbox> unclassified = List.from(detectedBboxs);
+
+    final Map<String, RegExp> fieldRegex = {
+      'dateOfBirth': RegExp(r'^\d{2}/\d{2}/\d{4}$'),
+      'year': RegExp(r'^\d{4}\s*-\s*\d{4}$'),
+      'studentId': RegExp(r'^\d{2}[a-zA-Z]\d{5,8}$'),
+    };
+
+    Bbox? dobAnchor;
+    Bbox? yearAnchor;
+    Bbox? studentIdAnchor;
+
+    unclassified.removeWhere((bbox) {
+      if (bbox.label.trim().length < 2) return true;
+
+      for (var entry in fieldRegex.entries) {
+        String fieldName = entry.key;
+        RegExp pattern = entry.value;
+
+        if (pattern.hasMatch(bbox.label.trim())) {
+          extractedData[fieldName] = bbox.label.trim();
+          if (fieldName == 'dateOfBirth') dobAnchor = bbox;
+          if (fieldName == 'year') yearAnchor = bbox;
+          if (fieldName == 'studentId') studentIdAnchor = bbox;
+          return true;
+        }
+      }
+
+      if (RegExp(
+        r'^(Họ & tên|Ngày sinh|Lớp|Khóa học|Mã SV)\s*:$',
+        caseSensitive: false,
+      ).hasMatch(bbox.label.trim())) {
+        return true;
+      }
+      return false;
+    });
+
+    if (dobAnchor != null && extractedData['fullName'] == null) {
+      _findNearestBboxAbove(
+        anchor: dobAnchor!,
+        candidates: unclassified,
+        onFound: (foundBbox) {
+          extractedData['fullName'] = foundBbox.label.trim();
+          unclassified.remove(foundBbox);
+        },
+      );
+    }
+
+    if (yearAnchor == null &&
+        studentIdAnchor != null &&
+        extractedData['year'] == null) {
+      _findNearestBboxAbove(
+        anchor: studentIdAnchor!,
+        candidates: unclassified,
+        onFound: (foundBbox) {
+          if (RegExp(r'\d{4}').hasMatch(foundBbox.label)) {
+            extractedData['year'] = foundBbox.label.trim();
+            yearAnchor = foundBbox;
+            unclassified.remove(foundBbox);
+          }
+        },
+      );
+    }
+
+    if (dobAnchor != null &&
+        yearAnchor != null &&
+        extractedData['className'] == null) {
+      Bbox? classCandidate;
+      for (final bbox in unclassified) {
+        bool isBetween =
+            bbox.yMin > dobAnchor!.yMax && bbox.yMax < yearAnchor!.yMin;
+        if (isBetween) {
+          classCandidate = bbox;
+          break;
+        }
+      }
+      if (classCandidate != null) {
+        extractedData['className'] = classCandidate.label.trim();
+        unclassified.remove(classCandidate);
+      }
+    }
+
+    final studentInfo = StudentInformation(
+      fullName: extractedData['fullName'] ?? "",
+      studentId: extractedData['studentId'] ?? "",
+      dateOfBirth: extractedData['dateOfBirth'] ?? "",
+      className: extractedData['className'] ?? "",
+      year: extractedData['year'] ?? "",
+    );
+
+    return studentInfo;
+  }
+
+  void _findNearestBboxAbove({
+    required Bbox anchor,
+    required List<Bbox> candidates,
+    required void Function(Bbox) onFound,
+  }) {
+    Bbox? bestCandidate;
+    double minVerticalDistance = double.infinity;
+
+    for (final candidate in candidates) {
+      if (candidate.yMax < anchor.yMin) {
+        double verticalDistance = (anchor.yMin - candidate.yMax).toDouble();
+        if (verticalDistance < minVerticalDistance) {
+          minVerticalDistance = verticalDistance;
+          bestCandidate = candidate;
+        }
+      }
+    }
+
+    if (bestCandidate != null) {
+      onFound(bestCandidate);
+    }
   }
 
   bool _isHorizontallyAligned(Bbox box1, Bbox box2, {double tolerance = 50.0}) {
